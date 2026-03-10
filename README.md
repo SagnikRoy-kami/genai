@@ -4,6 +4,12 @@
 
 Built with FastAPI, LangChain, Groq (Llama 3.3 70B), ChromaDB, and SQLite.
 
+## Live Demo
+
+**[https://risk-intelligence-vub7.onrender.com](https://risk-intelligence-vub7.onrender.com)**
+
+> First load may take ~30 seconds (free tier wakes up from sleep)
+
 ---
 
 ## What It Does
@@ -11,7 +17,6 @@ Built with FastAPI, LangChain, Groq (Llama 3.3 70B), ChromaDB, and SQLite.
 You feed it a project plan (as JSON, CSV, Excel, or PDF), and 4 AI agents work in sequence — each one passing its findings to the next — to produce a scored risk report with actionable mitigations.
 
 **Agent Pipeline:**
-
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │   Agent 1    │────▶│   Agent 2    │────▶│   Agent 3    │────▶│   Agent 4    │
@@ -50,7 +55,6 @@ Each agent queries ChromaDB for relevant company history (past project failures,
 ---
 
 ## Project Structure
-
 ```
 risk_intelligence/
 ├── main.py                  # FastAPI app — all API endpoints
@@ -90,11 +94,10 @@ risk_intelligence/
 ## Quick Start
 
 **Prerequisites:** Python 3.11+, a [Groq API key](https://console.groq.com/) (free tier works)
-
 ```bash
 # Clone
-git clone https://github.com/YOUR_USERNAME/risk-intelligence.git
-cd risk-intelligence
+git clone https://github.com/SagnikRoy-kami/genai.git
+cd genai/risk_intelligence
 
 # Install dependencies
 pip install -r requirements.txt
@@ -128,7 +131,6 @@ Upload a project plan as JSON, CSV, Excel, or PDF. The system parses it into str
 Fill in the structured form with tasks, resources, and dependencies directly in the browser.
 
 ### Option 3: API
-
 ```bash
 # Save a project
 curl -X POST http://localhost:8000/api/projects \
@@ -155,7 +157,6 @@ curl "http://localhost:8000/api/rag/search?query=vendor+outage&n=3"
 ## Input Format
 
 ### Structured JSON
-
 ```json
 {
   "project_name": "Project Phoenix",
@@ -215,7 +216,6 @@ The system ships with 15 sample company history records in `data/company_history
 The agents query these during analysis so they can say things like *"Based on Project Atlas in 2021, which had a similar dependency structure and overran by 58%, this project faces elevated schedule risk."*
 
 **Add your own records:**
-
 ```bash
 curl -X POST http://localhost:8000/api/rag/ingest \
   -H "Content-Type: application/json" \
