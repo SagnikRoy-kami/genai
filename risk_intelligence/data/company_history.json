@@ -1,0 +1,107 @@
+[
+  {
+    "id": "hist-001",
+    "category": "project_failure",
+    "year": 2021,
+    "source": "internal_postmortem",
+    "text": "Project Atlas (2021): A cloud migration initiative that was delayed by 6 months due to underestimated infrastructure complexity. The original budget of $2.4M ballooned to $3.8M. Root cause was insufficient dependency mapping between legacy systems and a single-vendor lock-in with CloudNova. Three senior engineers resigned during the project citing burnout. The project was eventually delivered but missed the Q3 market window, resulting in $1.2M in lost competitive advantage."
+  },
+  {
+    "id": "hist-002",
+    "category": "project_success",
+    "year": 2022,
+    "source": "internal_postmortem",
+    "text": "Project Meridian (2022): A customer-facing analytics dashboard delivered 2 weeks ahead of schedule. Success was attributed to clearly defined milestones, weekly risk reviews, and a dedicated QA team from day one. Budget stayed within 5% of the $800K estimate. Key learning: early involvement of the end-user committee reduced late-stage requirement changes by 70%."
+  },
+  {
+    "id": "hist-003",
+    "category": "market_event",
+    "year": 2022,
+    "source": "strategy_report",
+    "text": "In Q4 2022, the company faced a 15% revenue drop in the APAC region due to regulatory changes in data residency laws in India and Indonesia. The compliance team had flagged the risk 4 months earlier, but leadership deprioritized it. Remediation required a $500K emergency investment in regional data centers. Lesson: regulatory risks in expansion markets must be treated as P1 items regardless of perceived likelihood."
+  },
+  {
+    "id": "hist-004",
+    "category": "resource_issue",
+    "year": 2023,
+    "source": "hr_report",
+    "text": "Annual resource audit (2023): The engineering department operated at 78% capacity for 8 months due to a hiring freeze. This caused Project Orion (payment gateway rebuild) to slip by 3 months. Contractor backfill cost 2.3x the equivalent FTE salary. The company now maintains a bench of 10% above planned capacity for critical-path projects. Average time-to-hire for senior engineers was 67 days."
+  },
+  {
+    "id": "hist-005",
+    "category": "vendor_risk",
+    "year": 2023,
+    "source": "procurement_log",
+    "text": "Vendor incident (2023): FinServe Analytics, the company's primary market data provider, experienced a 72-hour outage that disrupted real-time pricing feeds. The company had no secondary provider configured. The outage caused $340K in SLA penalties to downstream clients. Post-incident, the procurement team established a mandatory dual-vendor policy for all Tier-1 data feeds."
+  },
+  {
+    "id": "hist-006",
+    "category": "financial_history",
+    "year": 2023,
+    "source": "cfo_quarterly_review",
+    "text": "FY2023 financial summary: Total revenue $48.2M (up 12% YoY). Operating margin 18.4%. R&D spend was 22% of revenue. Three projects exceeded budget by more than 20%: Atlas Phase 2 (+24%), DataVault (+31%), and MobileFirst (+22%). The CFO mandated that all projects above $500K must include a 15% contingency buffer and monthly financial checkpoints starting Q1 2024."
+  },
+  {
+    "id": "hist-007",
+    "category": "security_incident",
+    "year": 2022,
+    "source": "security_postmortem",
+    "text": "Security incident SEC-2022-014: A misconfigured API gateway exposed 12,000 customer records for 48 hours before detection. Root cause was a deployment script that bypassed the staging environment. No financial data was exposed but the company faced a $200K regulatory fine and significant reputational damage. This led to mandatory deployment checklists and automated configuration scanning in the CI/CD pipeline."
+  },
+  {
+    "id": "hist-008",
+    "category": "market_event",
+    "year": 2024,
+    "source": "strategy_report",
+    "text": "Market analysis Q1 2024: The competitive landscape shifted as two major competitors (NexGen Analytics and DataPrime) merged, creating a combined entity with 34% market share vs. the company's 18%. The merger is expected to drive aggressive pricing in the mid-market segment. The company's strategic response was to double down on enterprise features and pursue SOC2 Type II certification to differentiate on trust and compliance."
+  },
+  {
+    "id": "hist-009",
+    "category": "project_failure",
+    "year": 2024,
+    "source": "internal_postmortem",
+    "text": "Project Zenith (2024): An AI-powered fraud detection module that was cancelled after 5 months and $1.1M in spend. The project had no clear success metrics defined upfront, the training data was found to have significant bias issues, and the legal team raised compliance concerns about automated decision-making only at the UAT stage. Key takeaway: AI/ML projects must include legal review, bias audits, and measurable KPIs in the project charter before development begins."
+  },
+  {
+    "id": "hist-010",
+    "category": "dependency_issue",
+    "year": 2023,
+    "source": "pmo_report",
+    "text": "Cross-project dependency failure (2023): Project Titan (new billing engine) was blocked for 7 weeks because Project Horizon (customer identity platform) missed its API delivery deadline. Neither project manager had visibility into the other's timeline. The PMO introduced a shared dependency board in Jira and mandatory cross-project sync meetings for all projects with shared interfaces."
+  },
+  {
+    "id": "hist-011",
+    "category": "client_risk",
+    "year": 2024,
+    "source": "account_management",
+    "text": "Client concentration risk (2024): The top 3 clients account for 41% of annual recurring revenue. When GlobalTech (the largest client at 19% of ARR) threatened to switch vendors over a pricing dispute, the revenue team had to offer a 22% discount to retain them. The board has since mandated that no single client should exceed 12% of ARR, and the sales team is targeting 15 new mid-market accounts in FY2025."
+  },
+  {
+    "id": "hist-012",
+    "category": "project_success",
+    "year": 2024,
+    "source": "internal_postmortem",
+    "text": "Project Lighthouse (2024): A regulatory compliance automation tool delivered on time and $50K under budget. The team used an agile approach with 2-week sprints, had a dedicated risk owner who ran bi-weekly risk reviews, and maintained a live dependency tracker. Client satisfaction score was 4.8/5. This project is now the company's reference model for structured delivery."
+  },
+  {
+    "id": "hist-013",
+    "category": "technology_risk",
+    "year": 2023,
+    "source": "cto_report",
+    "text": "Technical debt assessment (2023): The legacy billing system (built in 2018) accumulates approximately $180K/year in maintenance costs and causes an average of 3 production incidents per quarter. Migration was deprioritized twice due to competing feature requests. The CTO estimates full replacement would cost $1.2M but would reduce operational costs by 60% within 2 years."
+  },
+  {
+    "id": "hist-014",
+    "category": "market_event",
+    "year": 2024,
+    "source": "economic_briefing",
+    "text": "Economic environment (mid-2024): Interest rate hikes led to a 20% reduction in VC funding across the SaaS sector. Three of the company's startup clients delayed contract renewals. The sales pipeline shrank by 14% QoQ. The CFO recommended building 6 months of operating reserves and shifting marketing spend from acquisition to retention campaigns."
+  },
+  {
+    "id": "hist-015",
+    "category": "resource_issue",
+    "year": 2024,
+    "source": "hr_report",
+    "text": "Skills gap analysis (2024): The company identified critical shortages in cloud security (2 FTE needed, 0 available), ML engineering (3 FTE needed, 1 available), and DevOps (2 FTE needed, 1 available). Upskilling programs take 4-6 months to show results. For immediate needs, the company approved a contractor budget of $420K for H2 2024. Employee turnover in engineering was 14%, above the industry average of 11%."
+  }
+]

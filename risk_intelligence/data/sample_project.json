@@ -1,0 +1,96 @@
+{
+  "project_name": "Project Phoenix - Payment Gateway Modernization",
+  "project_description": "Replace the legacy billing and payment processing system with a modern microservices architecture. Includes PCI-DSS recertification, migration of 12,000 active merchant accounts, and integration with three new payment providers.",
+  "tasks": [
+    {
+      "task_name": "Requirements Gathering & Stakeholder Alignment",
+      "start_date": "2025-03-01",
+      "end_date": "2025-03-28",
+      "current_status": "completed",
+      "description": "Workshops with finance, engineering, and compliance teams to define scope."
+    },
+    {
+      "task_name": "System Architecture Design",
+      "start_date": "2025-04-01",
+      "end_date": "2025-04-25",
+      "current_status": "completed",
+      "description": "Microservices design, API contracts, and database schema for the new gateway."
+    },
+    {
+      "task_name": "Core Payment Engine Development",
+      "start_date": "2025-04-28",
+      "end_date": "2025-07-18",
+      "current_status": "in_progress",
+      "description": "Build transaction processing, routing logic, and idempotency layer."
+    },
+    {
+      "task_name": "Payment Provider Integration (Stripe, Adyen, RazorPay)",
+      "start_date": "2025-06-01",
+      "end_date": "2025-08-15",
+      "current_status": "in_progress",
+      "description": "Integrate and certify connections with three payment providers."
+    },
+    {
+      "task_name": "Legacy Data Migration",
+      "start_date": "2025-07-01",
+      "end_date": "2025-09-15",
+      "current_status": "not_started",
+      "description": "Migrate 12,000 merchant accounts and 3 years of transaction history."
+    },
+    {
+      "task_name": "PCI-DSS Compliance Audit",
+      "start_date": "2025-08-01",
+      "end_date": "2025-09-30",
+      "current_status": "not_started",
+      "description": "External audit by CyberTrust Labs for PCI-DSS Level 1 certification."
+    },
+    {
+      "task_name": "User Acceptance Testing",
+      "start_date": "2025-09-01",
+      "end_date": "2025-10-15",
+      "current_status": "not_started",
+      "description": "End-to-end testing with 50 pilot merchants."
+    },
+    {
+      "task_name": "Production Rollout & Cutover",
+      "start_date": "2025-10-16",
+      "end_date": "2025-11-30",
+      "current_status": "not_started",
+      "description": "Phased rollout: 10% traffic, 50%, then full cutover with rollback plan."
+    }
+  ],
+  "resources": [
+    { "resource_type": "Backend Engineers", "needed": 6, "currently_used": 4, "unit": "count" },
+    { "resource_type": "DevOps / SRE", "needed": 2, "currently_used": 1, "unit": "count" },
+    { "resource_type": "QA Engineers", "needed": 3, "currently_used": 2, "unit": "count" },
+    { "resource_type": "Security / Compliance Specialist", "needed": 1, "currently_used": 0, "unit": "count" },
+    { "resource_type": "Project Budget", "needed": 1800000, "currently_used": 620000, "unit": "USD" },
+    { "resource_type": "Cloud Infrastructure Budget (Monthly)", "needed": 15000, "currently_used": 8500, "unit": "USD" }
+  ],
+  "dependencies": [
+    {
+      "dependency_name": "Customer Identity Platform (Project Horizon v2)",
+      "dependency_type": "internal",
+      "status": "pending",
+      "blocking_tasks": ["Payment Provider Integration (Stripe, Adyen, RazorPay)", "User Acceptance Testing"]
+    },
+    {
+      "dependency_name": "PCI-DSS Audit Slot from CyberTrust Labs",
+      "dependency_type": "external",
+      "status": "pending",
+      "blocking_tasks": ["PCI-DSS Compliance Audit"]
+    },
+    {
+      "dependency_name": "Stripe Connect v3 API (currently in beta)",
+      "dependency_type": "external",
+      "status": "blocked",
+      "blocking_tasks": ["Payment Provider Integration (Stripe, Adyen, RazorPay)"]
+    },
+    {
+      "dependency_name": "Legacy Database Schema Documentation",
+      "dependency_type": "internal",
+      "status": "pending",
+      "blocking_tasks": ["Legacy Data Migration"]
+    }
+  ]
+}
