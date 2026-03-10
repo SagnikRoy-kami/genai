@@ -95,3 +95,4 @@ CONTRIBUTORS :
 Sagnik Roy
 Trina Chakraborty
 Shrijita Bhattacharyya
+Sayudh Chakraborty
