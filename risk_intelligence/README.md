@@ -89,3 +89,8 @@ python main.py
 - **Project DB:** SQLite (structured project data)
 - **Frontend:** Vanilla HTML/CSS/JS + Tailwind
 - **Agent Framework:** LangChain
+
+CONTRIBUTORS :
+
+Sagnik Roy
+Trina Chakraborty
