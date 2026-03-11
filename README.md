@@ -297,7 +297,6 @@ Reports can be downloaded as PDF or copied as raw JSON.
 
 ## Roadmap
 
-- [ ] AWS deployment (App Runner / Lambda)
 - [ ] Multi-user authentication
 - [ ] Scheduled re-analysis with email alerts
 - [ ] Dashboard with historical risk score trends
@@ -305,7 +304,3 @@ Reports can be downloaded as PDF or copied as raw JSON.
 - [ ] Jira / Asana integration for live project data
 
 ---
-
-## License
-
-MIT
