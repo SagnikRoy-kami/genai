@@ -1,6 +1,6 @@
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
+import hashlib
 import json
 import shutil
 import logging
@@ -53,47 +53,82 @@ async def home(request: Request):
 @app.post("/api/projects")
 async def create_project(plan: ProjectPlanInput):
     """Save a structured project plan into SQLite and return the project ID."""
+    # Hash the actual data to catch duplicate manual saves
+    plan_json = json.dumps(plan.model_dump(mode='json'), sort_keys=True)
+    data_hash = hashlib.sha256(plan_json.encode('utf-8')).hexdigest()
+    
+    from database.project_db import get_cached_project, save_file_cache
+    cached_project_id = get_cached_project(data_hash)
+    
+    if cached_project_id:
+        return {"project_id": cached_project_id, "message": f"Project '{plan.project_name}' loaded from cache."}
+        
     project_id = save_project(plan)
+    save_file_cache(data_hash, plan.project_name, "manual_entry", project_id)
+    
     return {"project_id": project_id, "message": f"Project '{plan.project_name}' saved."}
-
 
 @app.post("/api/upload")
 async def upload_project_file(file: UploadFile = File(...)):
-    """
-    Upload a project file (JSON, CSV, Excel, PDF) and parse it into structured data.
-    - JSON / CSV / Excel: parsed directly into tasks, resources, dependencies.
-    - PDF: text extracted and LLM converts it to structured format.
-    Returns parsed data for user to review before saving.
-    """
     allowed_extensions = (".json", ".csv", ".xlsx", ".xls", ".pdf")
     filename = file.filename.lower()
-
+    
     if not any(filename.endswith(ext) for ext in allowed_extensions):
         return JSONResponse(status_code=400, content={
             "error": f"Unsupported file type. Please upload: {', '.join(allowed_extensions)}"
         })
-
+        
     try:
         file_bytes = await file.read()
-
-        # For PDF, pass the LLM so it can extract structured data
+        
+        # 1. Hash the file contents (The Fingerprint)
+        file_hash = hashlib.sha256(file_bytes).hexdigest()
+        
+        # 2. Check if this exact file was uploaded before
+        from database.project_db import get_cached_project, save_file_cache, get_latest_report
+        cached_project_id = get_cached_project(file_hash)
+        
+        if cached_project_id:
+            # File already analyzed — return cached report
+            existing_report = get_latest_report(cached_project_id)
+            return {
+                "project_id": cached_project_id,
+                "project_name": f"Cached — {file.filename}",
+                "cached": True,
+                "report": existing_report,
+                "message": f"File '{file.filename}' was already analyzed (Project ID {cached_project_id}). Returning cached report."
+            }
+            
+        # 3. Save the original file to disk
+        save_path = os.path.join(UPLOAD_DIR, f"{file_hash}_{file.filename}")
+        with open(save_path, "wb") as f:
+            f.write(file_bytes)
+            
+        # 4. Parse the file
         llm = None
         if filename.endswith(".pdf"):
             llm = chat_agent.llm
-
+            
+        from utils.file_parser import parse_upload
         parsed = parse_upload(file.filename, file_bytes, llm=llm)
-
-        # Validate and save
+        
+        # 5. Validate and save project
+        from models.schemas import ProjectPlanInput
+        from database.project_db import save_project
         plan = ProjectPlanInput(**parsed)
         project_id = save_project(plan)
-
+        
+        # 6. Save file hash → project mapping
+        save_file_cache(file_hash, file.filename, save_path, project_id)
+        
         return {
             "project_id": project_id,
             "project_name": plan.project_name,
             "parsed_data": parsed,
+            "cached": False,
             "message": f"File '{file.filename}' parsed and saved as project ID {project_id}."
         }
-
+        
     except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
     except Exception as e:
@@ -120,12 +155,19 @@ async def get_project_detail(project_id: int):
 # ── API: Risk Analysis ──────────────────────────────────────────────
 
 @app.post("/api/analyze/{project_id}")
-async def analyze_project(project_id: int):
+async def analyze_project(project_id: int, force: bool = False):
     """Run the 4-agent pipeline on a saved project and return the risk report."""
     try:
         project = get_project(project_id)
     except Exception:
         return JSONResponse(status_code=404, content={"error": "Project not found."})
+
+    # --- NEW: Check if report already exists! ---
+    if not force:
+        existing_report = get_latest_report(project_id)
+        if existing_report:
+            return {"report": existing_report, "cached": True}
+    # --------------------------------------------
 
     try:
         report = orchestrator.run(project)
