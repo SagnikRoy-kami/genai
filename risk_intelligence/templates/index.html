@@ -187,7 +187,17 @@ async function loadSampleData(){document.getElementById('projName').value='Proje
 
 async function loadProjectList(){try{const res=await fetch('/api/projects');const data=await res.json();const container=document.getElementById('projectListContainer');if(!data.projects||data.projects.length===0){container.innerHTML='<div class="card"><div class="card-inner" style="text-align:center;color:var(--text-dim);padding:40px;font-weight:300;">No saved projects yet.</div></div>';return}container.innerHTML=data.projects.map(p=>`<div class="card" style="cursor:pointer;transition:all .3s;" onclick="loadProjectReport(${p.id})" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'"><div class="card-inner" style="padding:16px 24px;"><div class="flex items-center justify-between"><div><p style="font-weight:600;">${p.name}</p><p class="mono text-xs" style="color:var(--text-dim)">ID: ${p.id} — ${p.created_at}</p></div><button class="btn-ghost" onclick="event.stopPropagation();rerunAnalysis(${p.id})">Re-analyze</button></div></div></div>`).join('')}catch(err){console.error(err)}}
 async function loadProjectReport(id){currentProjectId=id;try{const res=await fetch(`/api/report/${id}`);const data=await res.json();if(data.report){currentReport=data.report;renderReport(data.report);switchTab('report')}else{alert('No report found. Click Re-analyze.')}}catch(err){alert('Error loading report.')}}
-async function rerunAnalysis(id){currentProjectId=id;const res=await fetch(`/api/analyze/${id}`,{method:'POST'});const data=await res.json();if(data.report){currentReport=data.report;renderReport(data.report);switchTab('report')}}
+async function rerunAnalysis(id){
+    currentProjectId=id;
+    // Added ?force=true to the URL so the backend knows to bypass the cache
+    const res=await fetch(`/api/analyze/${id}?force=true`,{method:'POST'});
+    const data=await res.json();
+    if(data.report){
+        currentReport=data.report;
+        renderReport(data.report);
+        switchTab('report');
+    }
+}
 
 function downloadReportPDF(){if(!currentReport)return;const{jsPDF}=window.jspdf;const doc=new jsPDF();const r=currentReport;doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text('RISK INTELLIGENCE REPORT',14,22);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(100);doc.text(`Project: ${r.project_name}`,14,32);doc.text(`Generated: ${new Date(r.generated_at).toLocaleString()}`,14,38);doc.text(`Overall Risk Score: ${r.overall_risk_score}/25 (${(r.overall_severity||'').toUpperCase()})`,14,44);doc.setFontSize(11);doc.setTextColor(0);doc.text('Executive Summary',14,56);doc.setFontSize(9);doc.setTextColor(60);const summary=doc.splitTextToSize(r.executive_summary||'',180);doc.text(summary,14,63);let y=63+summary.length*5+10;if(r.risk_statements){doc.setFontSize(11);doc.setTextColor(0);doc.text('Risk Statements',14,y);y+=8;r.risk_statements.forEach(s=>{if(y>270){doc.addPage();y=20}doc.setFontSize(9);doc.setTextColor(100,50,200);doc.text(`${s.risk_id} — Score: ${s.score}/25`,14,y);y+=5;doc.setTextColor(0);doc.setFont('helvetica','bold');doc.text(s.title,14,y);y+=5;doc.setFont('helvetica','normal');doc.setTextColor(60);const desc=doc.splitTextToSize(s.description,180);doc.text(desc,14,y);y+=desc.length*4+6})}if(r.recommendations){if(y>250){doc.addPage();y=20}doc.setFontSize(11);doc.setTextColor(0);doc.text('Strategic Recommendations',14,y);y+=8;doc.setFontSize(9);doc.setTextColor(60);r.recommendations.forEach((rec,i)=>{if(y>275){doc.addPage();y=20}const lines=doc.splitTextToSize(`${i+1}. ${rec}`,175);doc.text(lines,14,y);y+=lines.length*4+4})}doc.save(`Risk_Report_${r.project_name.replace(/\s+/g,'_')}.pdf`)}
 
@@ -200,9 +210,93 @@ const uploadFileInput=document.getElementById('uploadFileInput'),uploadFileStatu
 uploadZone.addEventListener('drop',ev=>{if(ev.dataTransfer.files.length){uploadFileInput.files=ev.dataTransfer.files;uploadFileInput.dispatchEvent(new Event('change'))}});
 uploadFileInput.onchange=()=>{if(uploadFileInput.files.length>0){const f=uploadFileInput.files[0];uploadFileStatus.textContent=f.name+' ('+(f.size/1024).toFixed(1)+' KB)';uploadFileStatus.style.color='var(--text)';document.getElementById('btnUpload').disabled=false;document.getElementById('btnUploadAnalyze').disabled=false}};
 
-async function uploadFile(){if(!uploadFileInput.files[0])return;const btn=document.getElementById('btnUpload'),status=document.getElementById('uploadStatus');btn.disabled=true;btn.textContent='Parsing...';status.innerHTML='<span style="color:var(--text-muted);">Uploading and parsing file...</span>';const formData=new FormData();formData.append('file',uploadFileInput.files[0]);try{const res=await fetch('/api/upload',{method:'POST',body:formData});const data=await res.json();if(data.error){status.innerHTML='<span style="color:var(--red);">'+data.error+'</span>';return}currentProjectId=data.project_id;status.innerHTML='<span style="color:var(--green);">'+data.message+'</span>';if(data.parsed_data)populateFormFromParsed(data.parsed_data)}catch(err){status.innerHTML='<span style="color:var(--red);">Upload failed: '+err.message+'</span>'}finally{btn.disabled=false;btn.textContent='Upload & Parse'}}
+async function uploadFile(){
+    if(!uploadFileInput.files[0])return;
+    const btn=document.getElementById('btnUpload'),status=document.getElementById('uploadStatus');
+    btn.disabled=true;btn.textContent='Parsing...';
+    status.innerHTML='<span style="color:var(--text-muted);">Uploading and parsing file...</span>';
+    const formData=new FormData();formData.append('file',uploadFileInput.files[0]);
+    try{
+        const res=await fetch('/api/upload',{method:'POST',body:formData});
+        const data=await res.json();
+        if(data.error){status.innerHTML='<span style="color:var(--red);">'+data.error+'</span>';return}
 
-async function uploadAndAnalyze(){if(!uploadFileInput.files[0])return;const btn=document.getElementById('btnUploadAnalyze'),status=document.getElementById('uploadStatus');btn.disabled=true;btn.textContent='Processing...';status.innerHTML='<span style="color:var(--text-muted);">Uploading, parsing, and running analysis...</span>';const formData=new FormData();formData.append('file',uploadFileInput.files[0]);try{const uploadRes=await fetch('/api/upload',{method:'POST',body:formData});const uploadData=await uploadRes.json();if(uploadData.error){status.innerHTML='<span style="color:var(--red);">'+uploadData.error+'</span>';return}currentProjectId=uploadData.project_id;status.innerHTML='<span style="color:var(--text-muted);">File parsed. Running 4-agent analysis...</span>';const pipeline=document.getElementById('pipelineStatus');pipeline.style.display='block';pipeline.scrollIntoView({behavior:'smooth'});const steps=['market','assessment','statement','mitigation'];let stepIdx=0;const interval=setInterval(()=>{if(stepIdx<steps.length){if(stepIdx>0)document.getElementById('step-'+steps[stepIdx-1]).className='pipeline-step done';document.getElementById('step-'+steps[stepIdx]).className='pipeline-step running';stepIdx++}},2800);const analyzeRes=await fetch('/api/analyze/'+currentProjectId,{method:'POST'});const analyzeData=await analyzeRes.json();clearInterval(interval);steps.forEach(s=>document.getElementById('step-'+s).className='pipeline-step done');if(analyzeData.error){status.innerHTML='<span style="color:var(--red);">Analysis error: '+analyzeData.error+'</span>';return}currentReport=analyzeData.report;status.innerHTML='<span style="color:var(--green);">Analysis complete!</span>';renderReport(currentReport);switchTab('report')}catch(err){status.innerHTML='<span style="color:var(--red);">Error: '+err.message+'</span>'}finally{btn.disabled=false;btn.textContent='Upload & Analyze Directly'}}
+        // --- INJECTED CACHE CHECK ---
+        if (data.cached && data.report) {
+            currentProjectId = data.project_id;
+            currentReport = data.report;
+            status.innerHTML = '<span style="color:var(--accent);">This file was already analyzed. Cached report loaded.</span>';
+            renderReport(currentReport);
+            switchTab('report');
+            btn.disabled = false;
+            btn.textContent = 'Upload & Parse';
+            return;
+        }
+        // ----------------------------
+
+        currentProjectId=data.project_id;
+        status.innerHTML='<span style="color:var(--green);">'+data.message+'</span>';
+        if(data.parsed_data)populateFormFromParsed(data.parsed_data)
+    }catch(err){
+        status.innerHTML='<span style="color:var(--red);">Upload failed: '+err.message+'</span>'
+    }finally{
+        btn.disabled=false;btn.textContent='Upload & Parse'
+    }
+}
+
+async function uploadAndAnalyze(){
+    if(!uploadFileInput.files[0])return;
+    const btn=document.getElementById('btnUploadAnalyze'),status=document.getElementById('uploadStatus');
+    btn.disabled=true;btn.textContent='Processing...';
+    status.innerHTML='<span style="color:var(--text-muted);">Uploading, parsing, and running analysis...</span>';
+    const formData=new FormData();formData.append('file',uploadFileInput.files[0]);
+    try{
+        const uploadRes=await fetch('/api/upload',{method:'POST',body:formData});
+        const uploadData=await uploadRes.json();
+        if(uploadData.error){status.innerHTML='<span style="color:var(--red);">'+uploadData.error+'</span>';return}
+
+        // --- INJECTED CACHE CHECK ---
+        if (uploadData.cached && uploadData.report) {
+            currentProjectId = uploadData.project_id;
+            currentReport = uploadData.report;
+            status.innerHTML = '<span style="color:var(--accent);">Found cached report! Loaded instantly.</span>';
+            renderReport(currentReport);
+            switchTab('report');
+            btn.disabled = false;
+            btn.textContent = 'Upload & Analyze Directly';
+            return;
+        }
+        // ----------------------------
+
+        currentProjectId=uploadData.project_id;
+        status.innerHTML='<span style="color:var(--text-muted);">File parsed. Running 4-agent analysis...</span>';
+        const pipeline=document.getElementById('pipelineStatus');
+        pipeline.style.display='block';
+        pipeline.scrollIntoView({behavior:'smooth'});
+        const steps=['market','assessment','statement','mitigation'];
+        let stepIdx=0;
+        const interval=setInterval(()=>{
+            if(stepIdx<steps.length){
+                if(stepIdx>0)document.getElementById('step-'+steps[stepIdx-1]).className='pipeline-step done';
+                document.getElementById('step-'+steps[stepIdx]).className='pipeline-step running';
+                stepIdx++
+            }
+        },2800);
+        const analyzeRes=await fetch('/api/analyze/'+currentProjectId,{method:'POST'});
+        const analyzeData=await analyzeRes.json();
+        clearInterval(interval);
+        steps.forEach(s=>document.getElementById('step-'+s).className='pipeline-step done');
+        if(analyzeData.error){status.innerHTML='<span style="color:var(--red);">Analysis error: '+analyzeData.error+'</span>';return}
+        currentReport=analyzeData.report;
+        status.innerHTML='<span style="color:var(--green);">Analysis complete!</span>';
+        renderReport(currentReport);
+        switchTab('report')
+    }catch(err){
+        status.innerHTML='<span style="color:var(--red);">Error: '+err.message+'</span>'
+    }finally{
+        btn.disabled=false;btn.textContent='Upload & Analyze Directly'
+    }
+}
 
 function populateFormFromParsed(data){document.getElementById('projName').value=data.project_name||'';document.getElementById('projDesc').value=data.project_description||'';document.getElementById('taskList').innerHTML='';document.getElementById('resourceList').innerHTML='';document.getElementById('depList').innerHTML='';(data.tasks||[]).forEach(t=>addTask(t));(data.resources||[]).forEach(r=>addResource(r));(data.dependencies||[]).forEach(d=>addDependency(d));if(!data.tasks||data.tasks.length===0)addTask();if(!data.resources||data.resources.length===0)addResource();if(!data.dependencies||data.dependencies.length===0)addDependency()}
 
