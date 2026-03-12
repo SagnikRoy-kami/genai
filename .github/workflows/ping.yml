@@ -11,4 +11,4 @@ jobs:
 
     steps:
       - name: Ping Render
-        run: curl https://your-render-url.onrender.com
+        run: curl https://risk-intelligence.onrender.com
