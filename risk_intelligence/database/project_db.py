@@ -62,6 +62,16 @@ def init_db():
             created_at  TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (project_id) REFERENCES projects(id)
         );
+                           
+        CREATE TABLE IF NOT EXISTS file_cache (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            file_hash   TEXT UNIQUE NOT NULL,
+            file_name   TEXT NOT NULL,
+            file_path   TEXT,
+            project_id  INTEGER NOT NULL,
+            created_at  TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (project_id) REFERENCES projects(id)
+        );
         """)
 
 
@@ -134,3 +144,20 @@ def get_latest_report(project_id: int):
             (project_id,),
         ).fetchone()
     return json.loads(row["report_json"]) if row else None
+
+def save_file_cache(file_hash: str, file_name: str, file_path: str, project_id: int):
+    with _conn() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO file_cache (file_hash, file_name, file_path, project_id) VALUES (?, ?, ?, ?)",
+            (file_hash, file_name, file_path, project_id),
+        )
+        conn.commit()
+
+def get_cached_project(file_hash: str):
+    """Check if this exact file has been uploaded before. Returns project_id or None."""
+    with _conn() as conn:
+        row = conn.execute(
+            "SELECT project_id FROM file_cache WHERE file_hash = ?",
+            (file_hash,),
+        ).fetchone()
+    return row["project_id"] if row else None
