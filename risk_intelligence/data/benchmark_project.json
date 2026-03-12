@@ -1,0 +1,113 @@
+{
+  "project_name": "Project Titan — ERP System Migration",
+  "project_description": "Migrate the company's legacy ERP system to a cloud-based solution. Includes data migration of 5 years of financial records, integration with 4 existing systems, and staff retraining across 3 departments.",
+  "tasks": [
+    {
+      "task_name": "Requirements Analysis",
+      "start_date": "2025-01-15",
+      "end_date": "2025-02-28",
+      "current_status": "completed",
+      "description": "Gather requirements from finance, HR, and operations teams."
+    },
+    {
+      "task_name": "Vendor Selection",
+      "start_date": "2025-03-01",
+      "end_date": "2025-03-30",
+      "current_status": "completed",
+      "description": "Evaluate and select cloud ERP vendor."
+    },
+    {
+      "task_name": "Data Migration Development",
+      "start_date": "2025-04-01",
+      "end_date": "2025-06-30",
+      "current_status": "delayed",
+      "description": "Build ETL pipelines to migrate 5 years of financial records."
+    },
+    {
+      "task_name": "System Integration",
+      "start_date": "2025-05-15",
+      "end_date": "2025-08-15",
+      "current_status": "not_started",
+      "description": "Integrate new ERP with payroll, CRM, inventory, and billing systems."
+    },
+    {
+      "task_name": "User Acceptance Testing",
+      "start_date": "2025-08-01",
+      "end_date": "2025-09-15",
+      "current_status": "not_started",
+      "description": "End-to-end testing with 200 users across 3 departments."
+    },
+    {
+      "task_name": "Staff Training",
+      "start_date": "2025-09-01",
+      "end_date": "2025-10-15",
+      "current_status": "not_started",
+      "description": "Train 200 employees on the new ERP system."
+    },
+    {
+      "task_name": "Go-Live and Cutover",
+      "start_date": "2025-10-16",
+      "end_date": "2025-11-30",
+      "current_status": "not_started",
+      "description": "Switch from legacy to new ERP with rollback plan."
+    }
+  ],
+  "resources": [
+    {
+      "resource_type": "Data Engineers",
+      "needed": 4,
+      "currently_used": 1,
+      "unit": "count"
+    },
+    {
+      "resource_type": "ERP Consultants",
+      "needed": 2,
+      "currently_used": 0,
+      "unit": "count"
+    },
+    {
+      "resource_type": "QA Engineers",
+      "needed": 3,
+      "currently_used": 3,
+      "unit": "count"
+    },
+    {
+      "resource_type": "Training Specialists",
+      "needed": 2,
+      "currently_used": 2,
+      "unit": "count"
+    },
+    {
+      "resource_type": "Project Budget",
+      "needed": 2000000,
+      "currently_used": 950000,
+      "unit": "USD"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependency_name": "Legacy Database Schema Documentation",
+      "dependency_type": "internal",
+      "status": "blocked",
+      "blocking_tasks": ["Data Migration Development"]
+    },
+    {
+      "dependency_name": "Cloud Infrastructure Provisioning",
+      "dependency_type": "external",
+      "status": "pending",
+      "blocking_tasks": ["System Integration", "User Acceptance Testing"]
+    },
+    {
+      "dependency_name": "Payroll System API Access",
+      "dependency_type": "external",
+      "status": "blocked",
+      "blocking_tasks": ["System Integration"]
+    },
+    {
+      "dependency_name": "Data Privacy Legal Review",
+      "dependency_type": "internal",
+      "status": "pending",
+      "blocking_tasks": ["Data Migration Development", "Go-Live and Cutover"]
+    }
+  ]
+}
