@@ -1,0 +1,94 @@
+# ==========================================
+# ENVIRONMENTS & SECRETS
+# ==========================================
+.env
+.env.local
+.env.development
+.env.production
+# Note: We do NOT ignore .env.example so other devs can see the required keys
+!.env.example
+
+# ==========================================
+# DATABASES & VECTOR STORES
+# ==========================================
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+projects.db
+projects.db-journal
+projects.db-wal
+projects.db-shm
+
+# ChromaDB (Vector Database)
+chroma_db/
+chroma.sqlite3
+
+# ==========================================
+# LOCAL DATA & UPLOADS
+# ==========================================
+# Ignore user-uploaded files
+uploads/
+!uploads/.gitkeep
+
+# Ignore local processing data
+data/
+!data/.gitkeep
+# Uncomment the line below if you want to push your base company history to GitHub
+# !data/company_history.json 
+
+# ==========================================
+# PYTHON
+# ==========================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ==========================================
+# IDEs & OS FILES
+# ==========================================
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm / JetBrains
+.idea/
+
+# Mac / Windows
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+$RECYCLE.BIN/
