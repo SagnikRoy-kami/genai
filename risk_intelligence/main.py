@@ -70,71 +70,97 @@ async def create_project(plan: ProjectPlanInput):
 
 @app.post("/api/upload")
 async def upload_project_file(file: UploadFile = File(...)):
+    try:
+        return await _upload_logic(file)
+    except Exception as e:
+        logger.error(f"CRASH: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={
+            "error": f"Internal server error: {str(e)}"
+        })
+
+
+async def _upload_logic(file: UploadFile):
     allowed_extensions = (".json", ".csv", ".xlsx", ".xls", ".pdf")
     filename = file.filename.lower()
-    
+
     if not any(filename.endswith(ext) for ext in allowed_extensions):
         return JSONResponse(status_code=400, content={
-            "error": f"Unsupported file type. Please upload: {', '.join(allowed_extensions)}"
+            "error": "Unsupported file type"
         })
-        
-    try:
-        file_bytes = await file.read()
-        
-        # 1. Hash the file contents (The Fingerprint)
-        file_hash = hashlib.sha256(file_bytes).hexdigest()
-        
-        # 2. Check if this exact file was uploaded before
-        from database.project_db import get_cached_project, save_file_cache, get_latest_report
-        cached_project_id = get_cached_project(file_hash)
-        
-        if cached_project_id:
-            # File already analyzed — return cached report
-            existing_report = get_latest_report(cached_project_id)
-            return {
-                "project_id": cached_project_id,
-                "project_name": f"Cached — {file.filename}",
-                "cached": True,
-                "report": existing_report,
-                "message": f"File '{file.filename}' was already analyzed (Project ID {cached_project_id}). Returning cached report."
-            }
-            
-        # 3. Save the original file to disk
-        save_path = os.path.join(UPLOAD_DIR, f"{file_hash}_{file.filename}")
-        with open(save_path, "wb") as f:
-            f.write(file_bytes)
-            
-        # 4. Parse the file
-        llm = None
-        if filename.endswith(".pdf"):
-            llm = chat_agent.llm
-            
-        from utils.file_parser import parse_upload
-        parsed = parse_upload(file.filename, file_bytes, llm=llm)
-        
-        # 5. Validate and save project
-        from models.schemas import ProjectPlanInput
-        from database.project_db import save_project
-        plan = ProjectPlanInput(**parsed)
-        project_id = save_project(plan)
-        
-        # 6. Save file hash → project mapping
-        save_file_cache(file_hash, file.filename, save_path, project_id)
-        
-        return {
-            "project_id": project_id,
-            "project_name": plan.project_name,
-            "parsed_data": parsed,
-            "cached": False,
-            "message": f"File '{file.filename}' parsed and saved as project ID {project_id}."
-        }
-        
-    except ValueError as e:
-        return JSONResponse(status_code=400, content={"error": str(e)})
-    except Exception as e:
-        logger.error(f"Upload error: {e}", exc_info=True)
-        return JSONResponse(status_code=500, content={"error": f"Failed to parse file: {str(e)}"})
 
+    file_bytes = await file.read()
+    file_hash = hashlib.sha256(file_bytes).hexdigest()
+
+    from database.project_db import get_cached_project, save_file_cache, get_latest_report
+
+    # 🔁 Check cache
+    cached_project_id = get_cached_project(file_hash)
+
+    if cached_project_id:
+        existing_report = get_latest_report(cached_project_id)
+
+        if isinstance(existing_report, str):
+            try:
+                existing_report = json.loads(existing_report)
+            except:
+                existing_report = {}
+
+        return JSONResponse(content={
+            "project_id": cached_project_id,
+            "cached": True,
+            "report": existing_report or {},
+            "message": "Loaded from cache"
+        })
+
+    # 💾 Save file
+    save_path = os.path.join(UPLOAD_DIR, f"{file_hash}_{file.filename}")
+    with open(save_path, "wb") as f:
+        f.write(file_bytes)
+
+    # 🧠 Setup LLM safely
+    llm_instance = None
+    if filename.endswith(".pdf"):
+        try:
+            llm_instance = chat_agent.llm
+        except Exception:
+            llm_instance = None
+
+    from utils.file_parser import parse_upload
+
+    # 🔥 FIX: use llm_instance instead of undefined llm
+    raw = parse_upload(file.filename, file_bytes, llm=llm_instance)
+
+    # 🧹 Normalize parsed data
+    parsed = {
+        "project_name": raw.get("project_name") or raw.get("name") or "Untitled Project",
+        "project_description": raw.get("project_description") or raw.get("description") or "",
+        "tasks": raw.get("tasks") or [],
+        "resources": raw.get("resources") or [],
+        "dependencies": raw.get("dependencies") or []
+    }
+
+    from models.schemas import ProjectPlanInput
+    from database.project_db import save_project
+
+    # 🛡️ Schema validation
+    try:
+        plan = ProjectPlanInput(**parsed)
+    except Exception as e:
+        return JSONResponse(status_code=400, content={
+            "error": f"Invalid project format: {str(e)}"
+        })
+
+    project_id = save_project(plan)
+
+    # 💾 Cache mapping
+    save_file_cache(file_hash, file.filename, save_path, project_id)
+
+    return JSONResponse(content={
+        "project_id": project_id,
+        "parsed_data": parsed,
+        "cached": False,
+        "message": f"File '{file.filename}' uploaded and parsed successfully."
+    })
 
 @app.get("/api/projects")
 async def get_projects():
@@ -165,6 +191,12 @@ async def analyze_project(project_id: int, force: bool = False):
     # --- NEW: Check if report already exists! ---
     if not force:
         existing_report = get_latest_report(project_id)
+
+        if isinstance(existing_report, str):
+            try:
+                existing_report = json.loads(existing_report)
+            except:
+                existing_report = None
         if existing_report:
             return {"report": existing_report, "cached": True}
     # --------------------------------------------
@@ -252,6 +284,17 @@ async def search_rag(query: str, n: int = 5):
     results = query_company_history(query, n_results=n)
     return {"results": results}
 
+# ── Delete Files ─────────────────────────────────────────────────────────────
+print("DELETE ROUTE LOADED")
+
+@app.delete("/api/projects/{project_id}")
+async def delete_project_api(project_id: int):
+    from database.project_db import delete_project
+    try:
+        delete_project(project_id)
+        return {"message": "Project deleted successfully"}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ── Run ─────────────────────────────────────────────────────────────
 
