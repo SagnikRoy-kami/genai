@@ -93,7 +93,7 @@ async def _upload_logic(file: UploadFile):
 
     from database.project_db import get_cached_project, save_file_cache, get_latest_report
 
-    # 🔁 Check cache
+    #  Check cache
     cached_project_id = get_cached_project(file_hash)
 
     if cached_project_id:
@@ -112,12 +112,12 @@ async def _upload_logic(file: UploadFile):
             "message": "Loaded from cache"
         })
 
-    # 💾 Save file
+    #  Save file
     save_path = os.path.join(UPLOAD_DIR, f"{file_hash}_{file.filename}")
     with open(save_path, "wb") as f:
         f.write(file_bytes)
 
-    # 🧠 Setup LLM safely
+    #  Setup LLM safely
     llm_instance = None
     if filename.endswith(".pdf"):
         try:
@@ -127,10 +127,10 @@ async def _upload_logic(file: UploadFile):
 
     from utils.file_parser import parse_upload
 
-    # 🔥 FIX: use llm_instance instead of undefined llm
+    #  FIX: use llm_instance instead of undefined llm
     raw = parse_upload(file.filename, file_bytes, llm=llm_instance)
 
-    # 🧹 Normalize parsed data
+    #  Normalize parsed data
     parsed = {
         "project_name": raw.get("project_name") or raw.get("name") or "Untitled Project",
         "project_description": raw.get("project_description") or raw.get("description") or "",
@@ -142,7 +142,7 @@ async def _upload_logic(file: UploadFile):
     from models.schemas import ProjectPlanInput
     from database.project_db import save_project
 
-    # 🛡️ Schema validation
+    #  Schema validation
     try:
         plan = ProjectPlanInput(**parsed)
     except Exception as e:
@@ -152,7 +152,7 @@ async def _upload_logic(file: UploadFile):
 
     project_id = save_project(plan)
 
-    # 💾 Cache mapping
+    #  Cache mapping
     save_file_cache(file_hash, file.filename, save_path, project_id)
 
     return JSONResponse(content={
@@ -176,6 +176,21 @@ async def get_project_detail(project_id: int):
         return {"project": project}
     except Exception as e:
         return JSONResponse(status_code=404, content={"error": str(e)})
+    
+@app.post("/api/simulate/{project_id}")
+async def simulate_project(project_id: int):
+    """Quick risk simulation — Agent 2 + 3 only. ~10 seconds."""
+    try:
+        project = get_project(project_id)
+    except Exception:
+        return JSONResponse(status_code=404, content={"error": "Project not found."})
+
+    try:
+        report = orchestrator.run_quick(project)
+        return {"report": report, "mode": "simulation"}
+    except Exception as e:
+        logger.error(f"Simulation error: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 # ── API: Risk Analysis ──────────────────────────────────────────────
@@ -188,10 +203,8 @@ async def analyze_project(project_id: int, force: bool = False):
     except Exception:
         return JSONResponse(status_code=404, content={"error": "Project not found."})
 
-    # --- NEW: Check if report already exists! ---
     if not force:
         existing_report = get_latest_report(project_id)
-
         if isinstance(existing_report, str):
             try:
                 existing_report = json.loads(existing_report)
@@ -199,10 +212,19 @@ async def analyze_project(project_id: int, force: bool = False):
                 existing_report = None
         if existing_report:
             return {"report": existing_report, "cached": True}
-    # --------------------------------------------
 
     try:
         report = orchestrator.run(project)
+
+        # SAFETY CHECK — catch None returns
+        if not report:
+            logger.error("orchestrator.run() returned None — check orchestrator.py has 'return report'")
+            return JSONResponse(status_code=500, content={
+                "error": "Analysis completed but orchestrator returned empty. Restart server with: uvicorn main:app --reload"
+            })
+
+        logger.info(f"Report received from orchestrator: score={report.get('overall_risk_score')}, statements={len(report.get('risk_statements', []))}")
+
         save_report(project_id, json.dumps(report, default=str))
         return {"report": report}
 

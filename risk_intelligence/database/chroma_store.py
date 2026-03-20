@@ -45,13 +45,39 @@ def ingest_company_history(json_path: str = "data/company_history.json"):
 
 # ── Query ───────────────────────────────────────────────────────────
 
-def query_company_history(query: str, n_results: int = 5) -> list:
-    """Retrieve the most relevant company history chunks for a query."""
+def query_company_history(query: str, n_results: int = 5, categories: list = None, source_filter: str = None) -> list:
+    """Retrieve relevant history with optional metadata filtering."""
     collection = get_collection()
     if collection.count() == 0:
         return []
 
-    results = collection.query(query_texts=[query], n_results=n_results)
+    # Build metadata filter
+    where_filter = None
+    conditions = []
+
+    if categories:
+        if len(categories) == 1:
+            conditions.append({"category": {"$eq": categories[0]}})
+        else:
+            conditions.append({"category": {"$in": categories}})
+
+    if source_filter:
+        conditions.append({"source": {"$eq": source_filter}})
+
+    if len(conditions) == 1:
+        where_filter = conditions[0]
+    elif len(conditions) > 1:
+        where_filter = {"$and": conditions}
+
+    try:
+        results = collection.query(
+            query_texts=[query],
+            n_results=n_results,
+            where=where_filter
+        )
+    except Exception:
+        # Fallback without filter if filter fails
+        results = collection.query(query_texts=[query], n_results=n_results)
 
     docs = []
     for i in range(len(results["ids"][0])):
@@ -61,4 +87,8 @@ def query_company_history(query: str, n_results: int = 5) -> list:
             "metadata": results["metadatas"][0][i],
             "distance": results["distances"][0][i] if results.get("distances") else None,
         })
+
+    # Filter out low-relevance results (distance > 1.5 means weak match)
+    docs = [d for d in docs if d.get("distance") is None or d["distance"] < 1.5]
+
     return docs

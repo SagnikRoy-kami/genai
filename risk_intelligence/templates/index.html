@@ -477,14 +477,42 @@
     </div></div></div></div>
     <div id="tab-history" class="tab-content"><div id="projectListContainer" class="space-y-3"><div class="card"><div class="card-inner" style="text-align:center;padding:40px 32px;color:var(--text-dim);"><p style="font-weight:300;">Loading saved projects...</p></div></div></div></div>
 </div>
-<div id="chatBox" class="fixed bottom-6 right-6 flex-col glass" style="width:380px;z-index:100;max-height:520px;border-radius:20px;overflow:hidden;">
-    <div class="flex items-center justify-between px-5 py-3.5" style="border-bottom:1px solid var(--border);">
-        <div class="flex items-center gap-2.5"><div style="width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px color-mix(in srgb,var(--green) 40%,transparent);"></div><span class="mono text-xs" style="color:var(--text-muted);">Risk Consultant</span></div>
-        <button onclick="toggleChat()" style="color:var(--text-dim);background:none;border:none;font-size:20px;cursor:pointer;">×</button>
+<!-- ── CHAT WIDGET ────────────────────────────────────── -->
+<div id="chatOverlay" onclick="closeChat()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:98;transition:opacity .3s;"></div>
+
+<div id="chatBox" style="display:none;position:fixed;bottom:80px;right:24px;width:360px;max-height:480px;z-index:100;border-radius:20px;overflow:hidden;flex-direction:column;border:1px solid var(--border);background:var(--surface);box-shadow:0 12px 40px rgba(0,0,0,0.25);transition:all .3s ease;">
+    
+    <!-- Chat Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface-2);">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);"></div>
+            <span class="mono" style="font-size:12px;color:var(--text-muted);letter-spacing:.05em;">Risk Consultant</span>
+        </div>
+        <button onclick="closeChat()" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:18px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;transition:all .2s;" onmouseover="this.style.background='var(--surface)';this.style.color='var(--text)'" onmouseout="this.style.background='none';this.style.color='var(--text-dim)'">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
     </div>
-    <div id="chatMessages" class="flex flex-col gap-3 p-4 overflow-y-auto" style="flex:1;max-height:360px;"><div class="chat-bubble chat-bot">I have access to the full risk report and company history. Ask me anything.</div></div>
-    <div class="p-3" style="border-top:1px solid var(--border);"><input type="text" id="chatInput" class="w-full" placeholder="  Ask about risks, mitigations..." style="font-size:13px;border-radius:12px;"></div>
+    
+    <!-- Chat Messages -->
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;max-height:320px;min-height:200px;">
+        <div class="chat-bubble chat-bot">I have access to the full risk report and company history. Ask me anything about identified risks or mitigation strategies.</div>
+    </div>
+    
+    <!-- Chat Input -->
+    <div style="padding:12px;border-top:1px solid var(--border);background:var(--surface-2);">
+        <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="chatInput" placeholder="Ask about risks..." style="flex:1;font-size:13px;border-radius:12px;padding:10px 14px;margin:0;">
+            <button onclick="sendChatMessage()" style="background:var(--accent);border:none;border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .2s;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter='none'">
+                <svg width="16" height="16" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+        </div>
+    </div>
 </div>
+
+<!-- Chat FAB -->
+<button id="chatFab" onclick="openChat()" style="position:fixed;bottom:24px;right:24px;width:52px;height:52px;background:var(--accent);border:none;border-radius:16px;cursor:pointer;z-index:99;transition:all .3s;box-shadow:0 4px 20px var(--accent-glow);display:flex;align-items:center;justify-content:center;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+    <svg width="22" height="22" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+</button>
 <button onclick="toggleChat()" class="fixed flex items-center justify-center" style="bottom:24px;right:24px;width:52px;height:52px;background:var(--accent);border:none;border-radius:16px;cursor:pointer;z-index:99;transition:all .3s;box-shadow:0 4px 20px var(--accent-glow);" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
     <svg width="22" height="22" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
 </button>
@@ -517,7 +545,6 @@ async function submitProject(){
     try {
         let projectId = currentProjectId;
 
-        // ONLY create new project if it doesn't exist
         if(!projectId){
             const saveRes = await fetch('/api/projects', {
                 method: 'POST',
@@ -535,7 +562,6 @@ async function submitProject(){
             currentProjectId = projectId;
         }
 
-        // SHOW PIPELINE UI
         const pipeline = document.getElementById('pipelineStatus');
         pipeline.style.display = 'block';
         pipeline.scrollIntoView({behavior:'smooth'});
@@ -553,11 +579,7 @@ async function submitProject(){
             }
         }, 2800);
 
-        // ANALYZE (same project ID)
-        const analyzeRes = await fetch(`/api/analyze/${projectId}`, {
-            method: 'POST'
-        });
-
+        const analyzeRes = await fetch(`/api/analyze/${currentProjectId}?force=true`, { method: 'POST' });
         const analyzeData = await analyzeRes.json();
 
         clearInterval(interval);
@@ -568,9 +590,13 @@ async function submitProject(){
             return;
         }
 
-        currentReport = analyzeData.report;
-        renderReport(currentReport);
-        switchTab('report');
+        if(analyzeData.report){
+            currentReport = analyzeData.report;
+            renderReport(currentReport);
+            switchTab('report');
+        } else {
+            alert('Analysis completed but no report was returned. Check server logs.');
+        }
 
     } catch(err) {
         alert('Error: ' + (err.message || err));
@@ -579,8 +605,29 @@ async function submitProject(){
         btn.textContent = 'Save & Analyze';
     }
 }
+
 function renderReport(report){
+
+    if (!report) { 
+        alert('No report data received'); 
+        return; 
+    }
+    
+    // Default missing fields to prevent crashes
+    report.overall_severity = report.overall_severity || 'unknown';
+    report.overall_risk_score = report.overall_risk_score || 0;
+    report.executive_summary = report.executive_summary || 'No summary available.';
+    report.market_risks = report.market_risks || [];
+    report.internal_risks = report.internal_risks || [];
+    report.risk_statements = report.risk_statements || [];
+    report.mitigation_plan = report.mitigation_plan || [];
+    report.recommendations = report.recommendations || [];
+    report.generated_at = report.generated_at || new Date().toISOString();
+    report.project_name = report.project_name || 'Unknown Project';
+
+    if (!report) { console.error('renderReport called with null/undefined'); return; }
     const c = document.getElementById('reportContainer');
+    if (!c) { console.error('reportContainer not found'); return; }
 
     const severityColor = {
         low:'var(--green)',
@@ -783,9 +830,11 @@ async function loadProjectList(){
                         </div>
 
                         <div class="flex gap-2">
-                            <button class="btn-ghost"
-                                onclick="event.stopPropagation(); rerunAnalysis(${p.id})">
-                                Re-analyze
+                            <button class="btn-ghost" 
+                                onclick="event.stopPropagation();rerunAnalysis(${p.id})">Full Analysis
+                            </button>
+                                <button class="btn-ghost" 
+                                onclick="event.stopPropagation();quickScan(${p.id})" style="margin-left:4px;">Quick Scan
                             </button>
 
                             <button class="btn-ghost"
@@ -813,11 +862,12 @@ async function loadProjectList(){
             </div>`;
     }
 }
-async function loadProjectReport(id){currentProjectId=id;try{const res=await fetch(`/api/report/${id}`);const data=await res.json();if(data.report){currentReport=data.report;renderReport(data.report);switchTab('report')}else{alert('No report found. Click Re-analyze.')}}catch(err){alert('Error loading report.')}}
+async function loadProjectReport(id){currentProjectId=id;try{const res=await fetch(`/api/report/${id}`);const data=await res.json();if(data.report){currentReport=data.report;renderReport(data.report);switchTab('report')}else{alert('No report found. Click Full Analysis or Quick Scan to generate one.')}}catch(err){alert('Error loading report.')}}
 async function rerunAnalysis(id){
     currentProjectId=id;
     // Added ?force=true to the URL so the backend knows to bypass the cache
-    const res=await fetch(`/api/analyze/${id}?force=true`,{method:'POST'});
+    const res = await fetch(`/api/analyze/${id}?force=true`, { method: 'POST' });
+
     const data=await res.json();
     if(data.report){
         currentReport=data.report;
@@ -972,9 +1022,82 @@ function downloadReportPDF(){
     // SAVE FILE
     doc.save(`Risk_Report_${r.project_name.replace(/\s+/g,'_')}.pdf`);
 }
-function toggleChat(){document.getElementById('chatBox').classList.toggle('open')}
-document.getElementById('chatInput').addEventListener('keypress',async function(e){if(e.key==='Enter'&&this.value.trim()){const msg=this.value.trim();this.value='';const box=document.getElementById('chatMessages');box.innerHTML+=`<div class="chat-bubble chat-user">${msg}</div>`;box.scrollTop=box.scrollHeight;try{const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,project_id:currentProjectId})});const data=await res.json();const formatted=(data.reply||'No response.').replace(/\n/g,'<br>');const typingEl=document.createElement('div');typingEl.className='chat-bubble chat-bot';typingEl.textContent='Typing...';box.appendChild(typingEl);box.scrollTop=box.scrollHeight;setTimeout(()=>{typingEl.innerHTML=formatted;box.scrollTop=box.scrollHeight;},800);}catch(err){box.innerHTML+=`<div class="chat-bubble chat-bot" style="color:var(--red);">Connection error.</div>`}box.scrollTop=box.scrollHeight}});
+// ── Chat ───────────────────────────────────────────────
+let chatOpen = false;
 
+function openChat() {
+    chatOpen = true;
+    document.getElementById('chatBox').style.display = 'flex';
+    document.getElementById('chatOverlay').style.display = 'block';
+    document.getElementById('chatFab').style.display = 'none';
+    document.getElementById('chatInput').focus();
+    // Scroll to bottom
+    const box = document.getElementById('chatMessages');
+    box.scrollTop = box.scrollHeight;
+}
+
+function closeChat() {
+    chatOpen = false;
+    document.getElementById('chatBox').style.display = 'none';
+    document.getElementById('chatOverlay').style.display = 'none';
+    document.getElementById('chatFab').style.display = 'flex';
+}
+
+function toggleChat() {
+    if (chatOpen) closeChat();
+    else openChat();
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    
+    const box = document.getElementById('chatMessages');
+    
+    // User message
+    box.innerHTML += `<div class="chat-bubble chat-user">${msg}</div>`;
+    box.scrollTop = box.scrollHeight;
+    
+    // Typing indicator
+    const typingId = 'typing-' + Date.now();
+    box.innerHTML += `<div class="chat-bubble chat-bot" id="${typingId}" style="opacity:0.5;">
+        <span class="typing-dots">Thinking<span>.</span><span>.</span><span>.</span></span>
+    </div>`;
+    box.scrollTop = box.scrollHeight;
+    
+    try {
+        const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg, project_id: currentProjectId }),
+        });
+        const data = await res.json();
+        
+        // Remove typing indicator
+        const typingEl = document.getElementById(typingId);
+        if (typingEl) typingEl.remove();
+        
+        const formatted = (data.reply || 'No response.').replace(/\n/g, '<br>');
+        box.innerHTML += `<div class="chat-bubble chat-bot">${formatted}</div>`;
+    } catch (err) {
+        const typingEl = document.getElementById(typingId);
+        if (typingEl) typingEl.remove();
+        box.innerHTML += `<div class="chat-bubble chat-bot" style="color:var(--red);">Connection error. Please try again.</div>`;
+    }
+    box.scrollTop = box.scrollHeight;
+}
+
+// Send on Enter key
+document.getElementById('chatInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') sendChatMessage();
+});
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && chatOpen) closeChat();
+});
 const uploadFileInput=document.getElementById('uploadFileInput'),uploadFileStatus=document.getElementById('uploadFileStatus'),uploadZone=document.getElementById('uploadZone');
 ['dragenter','dragover'].forEach(e=>uploadZone.addEventListener(e,ev=>{ev.preventDefault();uploadZone.classList.add('dragover')}));
 ['dragleave','drop'].forEach(e=>uploadZone.addEventListener(e,ev=>{ev.preventDefault();uploadZone.classList.remove('dragover')}));
@@ -1094,7 +1217,7 @@ async function uploadAndAnalyze(){
                 stepIdx++
             }
         },2800);
-        const analyzeRes=await fetch('/api/analyze/'+currentProjectId,{method:'POST'});
+        const analyzeRes = await fetch('/api/analyze/' + currentProjectId + '?force=true', { method: 'POST' });
         const analyzeData=await analyzeRes.json();
         clearInterval(interval);
         steps.forEach(s=>document.getElementById('step-'+s).className='pipeline-step done');
@@ -1110,6 +1233,16 @@ async function uploadAndAnalyze(){
     }
 }
 
+async function quickScan(id) {
+    currentProjectId = id;
+    const res = await fetch(`/api/simulate/${id}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.report) {
+        currentReport = data.report;
+        renderReport(data.report);
+        switchTab('report');
+    }
+}
 function populateFormFromParsed(data){document.getElementById('projName').value=data.project_name||'';document.getElementById('projDesc').value=data.project_description||'';document.getElementById('taskList').innerHTML='';document.getElementById('resourceList').innerHTML='';document.getElementById('depList').innerHTML='';(data.tasks||[]).forEach(t=>addTask(t));(data.resources||[]).forEach(r=>addResource(r));(data.dependencies||[]).forEach(d=>addDependency(d));if(!data.tasks||data.tasks.length===0)addTask();if(!data.resources||data.resources.length===0)addResource();if(!data.dependencies||data.dependencies.length===0)addDependency()}
 
 addTask();addResource();addDependency();

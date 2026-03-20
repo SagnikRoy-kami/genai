@@ -210,10 +210,6 @@ def parse_excel(file_bytes: bytes) -> dict:
 # ── PDF Parser (uses LLM to extract structured data) ────────────────
 
 def parse_pdf(file_bytes: bytes, llm=None) -> dict:
-    """
-    Extract text from PDF, then use the LLM to parse it into structured project data.
-    If no LLM is provided, returns raw text in a minimal structure.
-    """
     try:
         from pypdf import PdfReader
     except ImportError:
@@ -229,7 +225,6 @@ def parse_pdf(file_bytes: bytes, llm=None) -> dict:
         raise ValueError("Could not extract text from PDF.")
 
     if llm is None:
-        # Return a minimal project with the PDF text as description
         return {
             "project_name": "Uploaded PDF Project",
             "project_description": full_text[:2000],
@@ -238,40 +233,79 @@ def parse_pdf(file_bytes: bytes, llm=None) -> dict:
             "dependencies": [],
         }
 
-    # Use LLM to extract structured data
-    prompt = f"""Extract structured project data from this document. 
-Return ONLY valid JSON matching this exact format:
+    prompt = f"""You are a Project Data Extractor. Your job is to extract REAL project management data from this document.
+
+DOCUMENT TEXT:
+{full_text[:6000]}
+
+CRITICAL RULES:
+1. Extract ONLY information that is EXPLICITLY stated or strongly implied in the document
+2. DO NOT invent tasks, resources, or dependencies that aren't mentioned
+3. If the document is NOT a project plan (e.g., it's a research paper, report, or analysis), then:
+   - Set project_name to the document's title
+   - Create tasks based on the actual phases/sections described
+   - For resources, extract ONLY what is mentioned (team size, tools, budget)
+   - For dependencies, extract ONLY what is mentioned (external tools, APIs, datasets, approvals)
+4. If a field cannot be determined from the document, use EMPTY arrays — do NOT make up data
+5. For current_status: 
+   - If the document describes completed work → "completed"
+   - If it describes ongoing work → "in_progress"  
+   - If it describes future/planned work → "not_started"
+   - If it mentions delays or issues → "delayed" or "blocked"
+6. For resources:
+   - ONLY include resources explicitly mentioned with quantities
+   - If the document says "team of 5 engineers" → needed=5
+   - If no quantity is mentioned, DO NOT include that resource
+   - For budget, ONLY include if a specific dollar/rupee amount is mentioned
+7. For dependencies:
+   - ONLY include external systems, tools, datasets, or approvals mentioned
+   - If something is described as unavailable or pending → status="blocked" or "pending"
+   - If something is described as set up and working → status="resolved"
+
+Respond ONLY with valid JSON:
 {{
-  "project_name": "Name of the project",
-  "project_description": "Brief description",
+  "project_name": "Exact title from the document",
+  "project_description": "1-2 sentence summary of what this document describes",
   "tasks": [
-    {{"task_name": "...", "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "current_status": "not_started|in_progress|completed|blocked|delayed", "description": "..."}}
+    {{
+      "task_name": "Actual task/phase from the document",
+      "start_date": "YYYY-MM-DD (use document dates if available, otherwise estimate)",
+      "end_date": "YYYY-MM-DD",
+      "current_status": "completed | in_progress | not_started | delayed | blocked",
+      "description": "What this task involves, from the document"
+    }}
   ],
   "resources": [
-    {{"resource_type": "...", "needed": 0, "currently_used": 0, "unit": "count|USD|hours"}}
+    {{
+      "resource_type": "Only resources explicitly mentioned",
+      "needed": 0,
+      "currently_used": 0,
+      "unit": "count | USD | hours"
+    }}
   ],
   "dependencies": [
-    {{"dependency_name": "...", "dependency_type": "internal|external", "status": "pending|resolved|blocked", "blocking_tasks": []}}
+    {{
+      "dependency_name": "Only dependencies explicitly mentioned",
+      "dependency_type": "internal | external",
+      "status": "pending | resolved | blocked",
+      "blocking_tasks": []
+    }}
   ]
 }}
 
-If some data is not in the document, make reasonable inferences. 
-Always include at least one task.
-
-DOCUMENT TEXT:
-{full_text[:4000]}
+REMEMBER: Empty arrays are BETTER than invented data. If you're not sure, leave it out.
 """
+
     response = llm.invoke(prompt)
     raw = response.content.strip()
 
-    # Clean markdown fences
     if raw.startswith("```"):
         raw = raw.split("\n", 1)[-1]
     if raw.endswith("```"):
         raw = raw.rsplit("```", 1)[0]
 
     try:
-        return json.loads(raw.strip())
+        parsed = json.loads(raw.strip())
     except json.JSONDecodeError:
         logger.warning("LLM could not parse PDF into structured data, using raw text.")
         return {
@@ -281,6 +315,25 @@ DOCUMENT TEXT:
             "resources": [],
             "dependencies": [],
         }
+
+    # POST-VALIDATION: Remove any resources with needed=0 or suspiciously generic data
+    if "resources" in parsed:
+        parsed["resources"] = [
+            r for r in parsed["resources"]
+            if r.get("needed", 0) > 0 and r.get("resource_type", "").strip() != ""
+        ]
+
+    # Ensure at least one task exists
+    if not parsed.get("tasks"):
+        parsed["tasks"] = [{
+            "task_name": "Project Execution",
+            "start_date": "2025-01-01",
+            "end_date": "2025-12-31",
+            "current_status": "in_progress",
+            "description": parsed.get("project_description", "")
+        }]
+
+    return parsed
 
 
 # ── Main Router ─────────────────────────────────────────────────────

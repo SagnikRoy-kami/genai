@@ -21,15 +21,24 @@ class BaseAgent:
             temperature=LLM_TEMPERATURE,
         )
 
-    def get_rag_context(self, query: str, n_results: int = 5) -> str:
-        """Retrieve relevant company history from ChromaDB."""
-        docs = query_company_history(query, n_results=n_results)
+    def get_rag_context(self, query: str, n_results: int = 5, categories: list = None) -> str:
+        """Retrieve relevant company history from ChromaDB with optional filtering."""
+        docs = query_company_history(query, n_results=n_results, categories=categories)
         if not docs:
-            return "No company history available."
+            return "No relevant company history found for this query."
         chunks = []
         for d in docs:
-            chunks.append(f"[{d['metadata'].get('category', '')} | {d['metadata'].get('year', '')}] {d['text']}")
-        return "\n\n".join(chunks)
+            cat = d['metadata'].get('category', 'unknown')
+            year = d['metadata'].get('year', '')
+            source = d['metadata'].get('source', '')
+            distance = d.get('distance', None)
+            relevance = ""
+            if distance is not None:
+                if distance < 0.5: relevance = " [HIGH RELEVANCE]"
+                elif distance < 1.0: relevance = " [MODERATE RELEVANCE]"
+                else: relevance = " [LOW RELEVANCE]"
+            chunks.append(f"[{cat} | {year} | {source}]{relevance}\n{d['text']}")
+        return "\n\n---\n\n".join(chunks)
 
     def call_llm(self, prompt: str) -> str:
         """Invoke the LLM and return raw text."""
@@ -55,7 +64,7 @@ class BaseAgent:
     @staticmethod
     def format_project_context(project: dict) -> str:
         """Turn a project dict into a readable text block for prompts."""
-        lines = [f"PROJECT: {project['name']}"]
+        lines = [f"PROJECT: {project.get('name') or project.get('project_name', 'Unknown')}"]
         if project.get("description"):
             lines.append(f"Description: {project['description']}")
 
